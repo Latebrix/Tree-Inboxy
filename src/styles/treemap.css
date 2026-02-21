@@ -1,0 +1,677 @@
+/* main treemap layout bits */
+
+.treemap-area {
+    width: 100%;
+    flex: 1;
+    overflow: auto;
+    padding: 80px var(--space-2) var(--space-2);
+}
+
+.treemap-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 320px;
+}
+
+/* grid mode stuff */
+
+.treemap-tile-wrapper {
+    position: absolute;
+    padding: 2px;
+    transition: all var(--transition-slow);
+    animation: tileAppear 0.4s ease both;
+}
+
+.treemap-tile-wrapper:nth-child(2) {
+    animation-delay: 0.03s;
+}
+
+.treemap-tile-wrapper:nth-child(3) {
+    animation-delay: 0.06s;
+}
+
+.treemap-tile-wrapper:nth-child(4) {
+    animation-delay: 0.09s;
+}
+
+.treemap-tile-wrapper:nth-child(5) {
+    animation-delay: 0.12s;
+}
+
+.treemap-tile-wrapper:nth-child(6) {
+    animation-delay: 0.15s;
+}
+
+@keyframes tileAppear {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.treemap-tile {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    container-type: size;
+}
+
+
+
+.treemap-tile.zoomable {
+    cursor: zoom-in;
+}
+
+.treemap-tile.zoomable:hover {
+    transform: scale(1.01);
+    z-index: 30;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* shiny glass layer */
+.tile-glass-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 60%);
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* content within the tile */
+.tile-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    color: white;
+    overflow: hidden;
+    padding: clamp(6px, 5cqmin, 18px);
+}
+
+/* top part with logo and site name */
+.tile-header {
+    display: flex;
+    align-items: center;
+    gap: clamp(2px, 1.5cqmin, 8px);
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.tile-favicon {
+    flex-shrink: 0;
+    width: clamp(14px, 12cqmin, 36px);
+    height: clamp(14px, 12cqmin, 36px);
+    border-radius: clamp(3px, 1.5cqmin, 8px);
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    padding: 1px;
+}
+
+.tile-logo-placeholder {
+    flex-shrink: 0;
+    width: clamp(14px, 12cqmin, 36px);
+    height: clamp(14px, 12cqmin, 36px);
+    border-radius: clamp(2px, 1cqmin, 6px);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: clamp(6px, 5cqmin, 14px);
+    color: white;
+}
+
+.tile-name {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    opacity: 0.95;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: clamp(0.5rem, 6cqmin, 1.3rem);
+    line-height: 1.2;
+}
+
+/* small note for the 'others' tile */
+.tile-others-note {
+    font-size: clamp(0px, 2.5cqmin, 0.7rem);
+    opacity: 0.7;
+    margin-top: clamp(1px, 1cqmin, 6px);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1;
+}
+
+@container (max-height: 100px) {
+    .tile-others-note {
+        display: none;
+    }
+}
+
+/* bottom count & progress wrap */
+.tile-footer {
+    display: flex;
+    flex-direction: column;
+    margin-top: auto;
+    width: 100%;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.tile-count-row {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(1px, 1cqmin, 6px);
+    overflow: hidden;
+}
+
+.tile-count {
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+    white-space: nowrap;
+    font-size: clamp(0.6rem, 18cqmin, 4.5rem);
+}
+
+.tile-count-label {
+    font-weight: 500;
+    opacity: 0.8;
+    white-space: nowrap;
+    font-size: clamp(0.3rem, 3.5cqmin, 0.95rem);
+}
+
+/* tiny progress bar */
+.tile-progress {
+    display: flex;
+    align-items: center;
+    gap: clamp(2px, 1cqmin, 8px);
+    margin-top: clamp(1px, 1cqmin, 10px);
+    width: 100%;
+    opacity: 0.9;
+    flex-shrink: 0;
+}
+
+.tile-progress-track {
+    flex: 1;
+    height: clamp(1px, 0.5cqmin, 5px);
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.tile-progress-fill {
+    height: 100%;
+    background: white;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+}
+
+.tile-progress-label {
+    font-size: clamp(0px, 2.5cqmin, 12px);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* hover state overlay */
+.tile-hover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background var(--transition-normal);
+}
+
+.treemap-tile.zoomable:hover .tile-hover-overlay {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.tile-hover-label {
+    opacity: 0;
+    transform: scale(0.6);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: white;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.treemap-tile.zoomable:hover .tile-hover-label {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* dashed border for the catch-all tile */
+.treemap-tile.others-tile,
+.list-tile.others-tile {
+    border-style: dashed;
+    opacity: 0.85;
+}
+
+/* list view specifically */
+
+.treemap-area.list-mode {
+    padding-top: 80px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.treemap-area.list-mode .treemap-container,
+.treemap-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-height: auto;
+    height: auto;
+    position: relative;
+}
+
+/* individual list card */
+.list-tile {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    min-height: 90px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    color: white;
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+    cursor: default;
+    animation: tileAppear 0.35s ease both;
+}
+
+.list-tile:nth-child(2) {
+    animation-delay: 0.02s;
+}
+
+.list-tile:nth-child(3) {
+    animation-delay: 0.04s;
+}
+
+.list-tile:nth-child(4) {
+    animation-delay: 0.06s;
+}
+
+.list-tile:nth-child(5) {
+    animation-delay: 0.08s;
+}
+
+
+
+.list-tile.zoomable {
+    cursor: pointer;
+}
+
+.list-tile.zoomable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.list-tile-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    gap: var(--space-4);
+    min-height: 90px;
+}
+
+.list-tile-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+}
+
+.list-tile-favicon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    padding: 2px;
+    flex-shrink: 0;
+}
+
+.list-tile-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.list-tile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.list-tile-name {
+    font-size: 1rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.95;
+}
+
+.list-tile-others-note {
+    font-size: 0.72rem;
+    opacity: 0.65;
+    line-height: 1.3;
+}
+
+.list-tile-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.list-tile-count-group {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.list-tile-count {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.list-tile-count-label {
+    font-size: 0.75rem;
+    opacity: 0.75;
+    font-weight: 500;
+}
+
+.list-tile-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 120px;
+}
+
+.list-tile-bar-track {
+    flex: 1;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.list-tile-bar-fill {
+    height: 100%;
+    background: white;
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+}
+
+.list-tile-bar-pct {
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* list hover tooltips */
+.list-tile-hover-cue {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0);
+    pointer-events: none;
+    transition: background var(--transition-normal);
+}
+
+.list-tile-hover-cue span {
+    opacity: 0;
+    transform: scale(0.8);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(6px);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.list-tile.zoomable:hover .list-tile-hover-cue {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.list-tile.zoomable:hover .list-tile-hover-cue span {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* little loading spinner popup */
+
+.inline-loading-overlay {
+    position: fixed;
+    bottom: var(--space-4);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    animation: popUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes popUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+.inline-loading-popup {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-5);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px);
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.inline-loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.inline-loading-count {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.78rem;
+}
+
+/* when there's no data */
+
+.treemap-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+}
+
+.treemap-empty p {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* responsive mobile stuff (forces lists) */
+
+@media (max-width: 768px) {
+    .treemap-area {
+        padding: 68px var(--space-2) var(--space-2);
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* mobile list override */
+    .treemap-area.grid-mode .treemap-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+        min-height: auto;
+        height: auto;
+    }
+
+    .treemap-area.grid-mode .treemap-tile-wrapper {
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 80px;
+        padding: 2px 0;
+    }
+
+    .treemap-area.grid-mode .treemap-tile {
+        min-height: 80px;
+    }
+
+    .treemap-area.grid-mode .tile-content {
+        flex-direction: row;
+        align-items: center;
+        padding: var(--space-3) var(--space-4);
+        gap: var(--space-3);
+    }
+
+    .treemap-area.grid-mode .tile-header {
+        flex-shrink: 0;
+        width: auto;
+    }
+
+    .treemap-area.grid-mode .tile-favicon,
+    .treemap-area.grid-mode .tile-logo-placeholder {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+    }
+
+    .treemap-area.grid-mode .tile-logo-placeholder {
+        font-size: 11px;
+    }
+
+    .treemap-area.grid-mode .tile-name {
+        font-size: 0.85rem;
+    }
+
+    .treemap-area.grid-mode .tile-footer {
+        margin-top: 0;
+        flex: 1;
+        align-items: flex-end;
+        text-align: right;
+    }
+
+    .treemap-area.grid-mode .tile-count {
+        font-size: 1.5rem;
+    }
+
+    .treemap-area.grid-mode .tile-count-label {
+        font-size: 0.7rem;
+    }
+
+    .treemap-area.grid-mode .tile-count-row {
+        justify-content: flex-end;
+    }
+
+    .treemap-area.grid-mode .tile-progress {
+        margin-top: 4px;
+    }
+
+    .treemap-area.grid-mode .tile-progress-track {
+        height: 3px;
+    }
+
+    .treemap-area.grid-mode .tile-progress-label {
+        font-size: 10px;
+    }
+
+    .treemap-area.grid-mode .tile-others-note {
+        display: none;
+    }
+
+    /* hide toggle if mobile */
+    .view-toggle-btn {
+        display: none !important;
+    }
+
+    /* tweak inline loader pos */
+    .inline-loading-overlay {
+        bottom: var(--space-2);
+    }
+
+    .inline-loading-popup {
+        font-size: 0.75rem;
+        padding: var(--space-2) var(--space-4);
+    }
+}
