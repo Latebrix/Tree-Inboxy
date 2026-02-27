@@ -11,7 +11,7 @@ export default function App() {
     const [lang, setLang] = useState("en");
     const [screen, setScreen] = useState("init"); // init, setup, or treemap
     const [userProfile, setUserProfile] = useState(null);
-    const [filter, setFilter] = useState("unread");
+    const [filter, setFilter] = useState("all");
     const [path, setPath] = useState([]);
     const [error, setError] = useState(null);
     const [toast, setToast] = useState(null);
@@ -159,7 +159,7 @@ export default function App() {
                 viewMode={viewMode}
                 onViewModeChange={() => setUserViewMode((m) => (m === "grid" ? "list" : "grid"))}
                 onBreadcrumbClick={handleBreadcrumbClick}
-                onFilterChange={() => setFilter((f) => (f === "unread" ? "all" : "unread"))}
+                onFilterChange={() => setFilter((f) => (f === "all" ? "unread" : "all"))}
                 onLangChange={() => setLang((l) => (l === "en" ? "ar" : "en"))}
                 onSync={handleSync}
                 onSignOut={handleSignOut}

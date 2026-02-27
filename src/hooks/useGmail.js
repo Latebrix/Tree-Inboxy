@@ -1,12 +1,12 @@
 import { useState, useCallback, useRef } from "react";
 import { fetchInbox, fetchNewEmails } from "../services/gmail.js";
-import { groupEmails, getCount } from "../utils/grouping.js";
-import { batchFetchFavicons } from "../services/favicon.js";
+import { groupEmails, getCount, aggregateOthers } from "../utils/grouping.js";
+import { getFavicon } from "../services/favicon.js";
 import { hashColor, hslToHex } from "../utils/colors.js";
 import { saveEmails, loadEmails, saveMeta, loadMeta, hasStoredData, clearStorage } from "../services/storage.js";
 
 /**
- * Orchestrates Gmail data fetching, persistence, and live updates.
+ * Gmail Data Fetching and live updates
  */
 export function useGmail() {
     const [state, setState] = useState({
@@ -85,11 +85,20 @@ export function useGmail() {
             error: null,
         });
 
-        // let the favicons trickle in
-        fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
-            if (updatedColors && !abortRef.current) {
-                setState(s => ({ ...s, domainColors: updatedColors }));
-                await saveMeta("domainColors", Array.from(updatedColors.entries()));
+        // let the favicons trickle in one by one
+        fetchTopFavicons(hierarchy, domainColors, (domain, info) => {
+            if (!abortRef.current) {
+                setState(s => {
+                    const nextColors = new Map(s.domainColors);
+                    const current = nextColors.get(domain);
+                    const colorToUse = info.color || current?.color;
+                    nextColors.set(domain, { color: colorToUse, faviconUrl: info.url });
+
+                    // safely stash the new color map into the db behind the scenes
+                    saveMeta("domainColors", Array.from(nextColors.entries())).catch(() => { });
+
+                    return { ...s, domainColors: nextColors };
+                });
             }
         });
 
@@ -156,11 +165,20 @@ export function useGmail() {
                 error: null,
             });
 
-            // let the favicons trickle in
-            fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
-                if (updatedColors && !abortRef.current) {
-                    setState(s => ({ ...s, domainColors: updatedColors }));
-                    await saveMeta("domainColors", Array.from(updatedColors.entries()));
+            // let the favicons trickle in one by one
+            fetchTopFavicons(hierarchy, domainColors, (domain, info) => {
+                if (!abortRef.current) {
+                    setState(s => {
+                        const nextColors = new Map(s.domainColors);
+                        const current = nextColors.get(domain);
+                        const colorToUse = info.color || current?.color;
+                        nextColors.set(domain, { color: colorToUse, faviconUrl: info.url });
+
+                        // safely stash the new color map into the db behind the scenes
+                        saveMeta("domainColors", Array.from(nextColors.entries())).catch(() => { });
+
+                        return { ...s, domainColors: nextColors };
+                    });
                 }
             });
         } catch (err) {
@@ -217,11 +235,20 @@ export function useGmail() {
                 error: null,
             });
 
-            // let the favicons trickle in
-            fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
-                if (updatedColors && !abortRef.current) {
-                    setState(s => ({ ...s, domainColors: updatedColors }));
-                    await saveMeta("domainColors", Array.from(updatedColors.entries()));
+            // let the favicons trickle in one by one
+            fetchTopFavicons(hierarchy, domainColors, (domain, info) => {
+                if (!abortRef.current) {
+                    setState(s => {
+                        const nextColors = new Map(s.domainColors);
+                        const current = nextColors.get(domain);
+                        const colorToUse = info.color || current?.color;
+                        nextColors.set(domain, { color: colorToUse, faviconUrl: info.url });
+
+                        // safely stash the new color map into the db behind the scenes
+                        saveMeta("domainColors", Array.from(nextColors.entries())).catch(() => { });
+
+                        return { ...s, domainColors: nextColors };
+                    });
                 }
             });
         } catch (err) {
@@ -265,30 +292,29 @@ function initFallbackColors(hierarchy, existingColors = new Map()) {
     return domainColors;
 }
 
-// grab favicons for the biggest domains in the background
-async function fetchTopFavicons(hierarchy, existingColors) {
-    // sort to find the top 50 biggest domains so we don't overkill the network
-    const sorted = [...hierarchy].sort((a, b) => getCount(b, "all") - getCount(a, "all"));
-    const topDomains = sorted.slice(0, 50).map((n) => n.id);
+// grab favicons for the biggest domains in the background and tell the app as each one loads
+async function fetchTopFavicons(hierarchy, existingColors, onIconLoaded) {
+    // figure out which domains are actually shown in the main view (not dumped in others)
+    const mainNodes = aggregateOthers(hierarchy, "all", "Others");
 
-    const domainColors = new Map(existingColors);
+    // grab only the ones that are actual root domains (skip the others bucket itself)
+    const visibleDomains = mainNodes.filter(n => !n.isOthers).map(n => n.id);
 
-    try {
-        const favicons = await batchFetchFavicons(topDomains);
-        let changed = false;
-
-        for (const [domain, info] of favicons) {
-            if (info.color || info.url) {
-                const current = domainColors.get(domain);
-                const colorToUse = info.color || current?.color;
-
-                domainColors.set(domain, { color: colorToUse, faviconUrl: info.url });
-                changed = true;
-            }
-        }
-
-        return changed ? domainColors : null;
-    } catch {
-        return null; // didn't work, just stick with fallbacks
+    // fetch them in small chunks so we don't spam the network, and update UI instantly
+    const limit = 4;
+    for (let i = 0; i < visibleDomains.length; i += limit) {
+        const batch = visibleDomains.slice(i, i + limit);
+        await Promise.allSettled(
+            batch.map(async (domain) => {
+                try {
+                    const info = await getFavicon(domain);
+                    if (info.color || info.url) {
+                        onIconLoaded(domain, info);
+                    }
+                } catch {
+                    // ignore if one fails, move on
+                }
+            })
+        );
     }
 }

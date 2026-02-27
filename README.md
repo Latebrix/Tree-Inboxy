@@ -1,6 +1,9 @@
 > **Under Development**
 > This project is currently a work in progress. Features may change and there might be bugs!
 
+![Screenshot](images/Screenshot-1.png)
+
+Tree inboxy is a data visulization tool that helps you to visualize your gmail inbox as a simple Tree Map. It's helpful to identify which services send you the most emails or maybe an unblocked junk :)
 
 Steps to get your Google API Client ID:
 1. Go to the [Google API Console](https://console.developers.google.com/)
@@ -15,7 +18,6 @@ Steps to get your Google API Client ID:
 
 NOTE: Your data doesn't leave your device, it's all stored locally in your browser. + You can also use Tree Inboxy on LocalHost (But don't forget to change JavaScript origin & Redirect URI)
 
-A useful tool I made to know which services send me the most emails Or maybe an unblocked junk :)
-
 ---
-*Created as a weekend project to play around with Data Visualization and Google APIs.... I promise I'll make a professional ReadME ASAP*
+*Created as a weekend project to play around with Data Visualization and Google APIs.... I promise I'll make a professional ReadME ASAP* *Mohamed on 27 Feb 2026: Done as promised!*
+
