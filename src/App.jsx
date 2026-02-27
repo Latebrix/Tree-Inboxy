@@ -22,7 +22,7 @@ export default function App() {
     const hierarchy = gmail.hierarchy;
     const domainColors = useMemo(() => gmail.domainColors, [gmail.domainColors]);
 
-    // subfolders always use list view so it's readable
+    // subfolders always use list view so it's readable - 
     const viewMode = path.length > 0 ? "list" : userViewMode;
 
     const { items, totalCount, breadcrumbs } = useTreemapData(
