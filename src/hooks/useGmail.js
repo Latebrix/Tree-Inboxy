@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { fetchInbox, fetchNewEmails } from "../services/gmail.js";
-import { groupEmails } from "../utils/grouping.js";
+import { groupEmails, getCount } from "../utils/grouping.js";
 import { batchFetchFavicons } from "../services/favicon.js";
 import { hashColor, hslToHex } from "../utils/colors.js";
 import { saveEmails, loadEmails, saveMeta, loadMeta, hasStoredData, clearStorage } from "../services/storage.js";
@@ -30,11 +30,50 @@ export function useGmail() {
 
         setState((s) => ({ ...s, status: "restoring", progressPhase: "restoring" }));
 
-        const emails = await loadEmails();
+        // grab cached treemap data if we have it - way faster than doing it from scratch
+        const cachedHierarchy = await loadMeta("hierarchy");
+        const cachedColorsArr = await loadMeta("domainColors");
+
+        let emails = [];
+        let hierarchy = [];
+        let domainColors = new Map();
+
+        if (cachedHierarchy) {
+            hierarchy = cachedHierarchy;
+            if (cachedColorsArr) {
+                // we have colors cached, load them directly
+                domainColors = new Map(cachedColorsArr);
+            } else {
+                // fallback if missing
+                domainColors = initFallbackColors(hierarchy);
+            }
+
+            setState({
+                status: "done",
+                progressPhase: "",
+                emails: [], // lazy load these so the big treemap pops up instantly
+                hierarchy,
+                domainColors,
+                progress: 0,
+                error: null,
+            });
+
+            // quietly load the actual emails in the background for later
+            loadEmails().then(loadedEmails => {
+                if (!abortRef.current) {
+                    setState(s => ({ ...s, emails: loadedEmails, progress: loadedEmails.length }));
+                }
+            });
+
+            return true;
+        }
+
+        // slow path: if no cached hierarchy, we gotta build it
+        emails = await loadEmails();
         if (emails.length === 0) return false;
 
-        const hierarchy = groupEmails(emails);
-        const domainColors = await enrichWithFavicons(hierarchy);
+        hierarchy = groupEmails(emails);
+        domainColors = initFallbackColors(hierarchy);
 
         setState({
             status: "done",
@@ -45,6 +84,17 @@ export function useGmail() {
             domainColors,
             error: null,
         });
+
+        // let the favicons trickle in
+        fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
+            if (updatedColors && !abortRef.current) {
+                setState(s => ({ ...s, domainColors: updatedColors }));
+                await saveMeta("domainColors", Array.from(updatedColors.entries()));
+            }
+        });
+
+        // save the heavy lifting for next time
+        await saveMeta("hierarchy", hierarchy);
 
         return true;
     }, []);
@@ -90,7 +140,9 @@ export function useGmail() {
             await saveMeta("lastFetch", Date.now());
 
             const hierarchy = groupEmails(emails);
-            const domainColors = await enrichWithFavicons(hierarchy);
+            await saveMeta("hierarchy", hierarchy);
+
+            const domainColors = initFallbackColors(hierarchy);
 
             if (abortRef.current) return;
 
@@ -102,6 +154,14 @@ export function useGmail() {
                 hierarchy,
                 domainColors,
                 error: null,
+            });
+
+            // let the favicons trickle in
+            fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
+                if (updatedColors && !abortRef.current) {
+                    setState(s => ({ ...s, domainColors: updatedColors }));
+                    await saveMeta("domainColors", Array.from(updatedColors.entries()));
+                }
             });
         } catch (err) {
             if (!abortRef.current) {
@@ -139,7 +199,11 @@ export function useGmail() {
             await saveMeta("lastFetch", Date.now());
 
             const hierarchy = groupEmails(allEmails);
-            const domainColors = await enrichWithFavicons(hierarchy);
+            await saveMeta("hierarchy", hierarchy);
+
+            const cachedColorsArr = await loadMeta("domainColors");
+            const currentColors = cachedColorsArr ? new Map(cachedColorsArr) : new Map();
+            const domainColors = initFallbackColors(hierarchy, currentColors);
 
             if (abortRef.current) return;
 
@@ -151,6 +215,14 @@ export function useGmail() {
                 hierarchy,
                 domainColors,
                 error: null,
+            });
+
+            // let the favicons trickle in
+            fetchTopFavicons(hierarchy, domainColors).then(async (updatedColors) => {
+                if (updatedColors && !abortRef.current) {
+                    setState(s => ({ ...s, domainColors: updatedColors }));
+                    await saveMeta("domainColors", Array.from(updatedColors.entries()));
+                }
             });
         } catch (err) {
             if (!abortRef.current) {
@@ -180,30 +252,43 @@ export function useGmail() {
     return { ...state, fetchData, fetchNewData, restoreData, reset };
 }
 
-/**
- * Fetch favicons and build domain color map.
- */
-async function enrichWithFavicons(hierarchy) {
-    const domains = hierarchy.map((node) => node.id);
-    const domainColors = new Map();
-
-    try {
-        const favicons = await batchFetchFavicons(domains);
-        for (const [domain, info] of favicons) {
-            if (info.color) {
-                domainColors.set(domain, { color: info.color, faviconUrl: info.url });
-            }
-        }
-    } catch {
-        // Non-critical
-    }
-
-    for (const domain of domains) {
+// prep the generic colors instantly so we don't hold up the line
+function initFallbackColors(hierarchy, existingColors = new Map()) {
+    const domainColors = new Map(existingColors);
+    for (const node of hierarchy) {
+        const domain = node.id;
         if (!domainColors.has(domain)) {
             const fallback = hashColor(domain);
             domainColors.set(domain, { color: hslToHex(fallback), faviconUrl: null });
         }
     }
-
     return domainColors;
+}
+
+// grab favicons for the biggest domains in the background
+async function fetchTopFavicons(hierarchy, existingColors) {
+    // sort to find the top 50 biggest domains so we don't overkill the network
+    const sorted = [...hierarchy].sort((a, b) => getCount(b, "all") - getCount(a, "all"));
+    const topDomains = sorted.slice(0, 50).map((n) => n.id);
+
+    const domainColors = new Map(existingColors);
+
+    try {
+        const favicons = await batchFetchFavicons(topDomains);
+        let changed = false;
+
+        for (const [domain, info] of favicons) {
+            if (info.color || info.url) {
+                const current = domainColors.get(domain);
+                const colorToUse = info.color || current?.color;
+
+                domainColors.set(domain, { color: colorToUse, faviconUrl: info.url });
+                changed = true;
+            }
+        }
+
+        return changed ? domainColors : null;
+    } catch {
+        return null; // didn't work, just stick with fallbacks
+    }
 }
