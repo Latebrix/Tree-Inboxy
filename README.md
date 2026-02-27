@@ -19,5 +19,5 @@ Steps to get your Google API Client ID:
 NOTE: Your data doesn't leave your device, it's all stored locally in your browser. + You can also use Tree Inboxy on LocalHost (But don't forget to change JavaScript origin & Redirect URI)
 
 ---
-*Created as a weekend project to play around with Data Visualization and Google APIs.... I promise I'll make a professional ReadME ASAP* *Mohamed on 27 Feb 2026: Done as promised!*
+*Created as a weekend project to play around with Data Visualization and Google APIs.... I promise I'll make a professional ReadME ASAP* *-- Mohamed on 27 Feb 2026: Done as promised!*
 
