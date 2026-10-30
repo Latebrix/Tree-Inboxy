@@ -1,5 +1,5 @@
 > **Under Development**
-> This project is currently a work in progress. Features may change and there might be bugs!
+> This project is currently a work in progress. Features may change and there might be bugs and errors!
 
 ![Screenshot](images/Screenshot-1.png)
 
@@ -20,4 +20,3 @@ NOTE: Your data doesn't leave your device, it's all stored locally in your brows
 
 ---
 *Created as a weekend project to play around with Data Visualization and Google APIs.... I promise I'll make a professional ReadME ASAP* *-- Mohamed on 27 Feb 2026: Done as promised!*
-
